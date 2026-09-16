@@ -1,0 +1,54 @@
+# entitlements_plist.xml — Example Entitlement Configuration
+
+Secure baseline entitlements for a release-signed iOS app. Adapt `<TEAMID>` and bundle IDs; do not include wildcard keychain groups.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Application identifier: auto-injected by signing; do not hand-edit -->
+    <key>application-identifier</key>
+    <string>&lt;TEAMID&gt;.com.example.app</string>
+
+    <!-- Keychain: ONLY this app's access group — no wildcards -->
+    <key>keychain-access-groups</key>
+    <array>
+        <string>&lt;TEAMID&gt;.com.example.app</string>
+    </array>
+
+    <!-- Hardened runtime: enabled, no weakening flags -->
+    <key>com.apple.security.cs.runtime</key>
+    <true/>
+    <!-- DO NOT set: allow-jit, allow-unsigned-executable-memory,
+         allow-dyld-environment-variables, disable-library-validation,
+         disable-executable-page-protection, debugger -->
+    <!-- DO NOT set get-task-allow in release builds -->
+
+    <!-- Network: only if the app accepts inbound connections -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+
+    <!-- App Groups: one specific group, no wildcard -->
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>group.com.example.app</string>
+    </array>
+
+    <!-- Associated domains: explicit list only -->
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <string>applinks:example.com</string>
+        <string>webcredentials:example.com</string>
+    </array>
+
+    <!-- Push notifications -->
+    <key>aps-environment</key>
+    <string>production</string>
+</dict>
+</plist>
+```
+
+Notes:
+- The provisioning profile (embedded.mobileprovision) overrides/supersedes some of these; verify both with `ios-wizard static entitlements`.
+- For keychain secrets, prefer `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` at the API level over entitlement-level broadness.

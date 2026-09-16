@@ -1,0 +1,268 @@
+#!/usr/bin/env python3
+"""
+ios-wizard — unified entry point for the iOS Security Wizard toolkit.
+
+Usage:
+  ./ios-wizard triage <target.ipa|App.app> -o report/
+  ./ios-wizard static <macho|ipa_structure|entitlements|objc|dyld|hardened|crypto> <args...>
+  ./ios-wizard dynamic <gadget|interpose|xpc|launchd|jailbreak> <args...>
+  ./ios-wizard pentest <diff|probes|baseline|report> <args...>
+  ./ios-wizard test
+"""
+
+import sys
+import os
+import subprocess
+import tempfile
+import shutil
+from pathlib import Path
+
+SKILL_ROOT = Path(__file__).parent
+STATIC_DIR = SKILL_ROOT / 'static'
+DYNAMIC_DIR = SKILL_ROOT / 'dynamic'
+PENTEST_DIR = SKILL_ROOT / 'pentest'
+
+
+def run_script(script_dir: Path, name: str, args: list):
+    """Run a toolkit script with the given args, forwarding exit code."""
+    script = script_dir / f'{name}.py'
+    if not script.exists():
+        print(f"Error: script not found: {script}")
+        return 1
+    cmd = [sys.executable, str(script)] + args
+    return subprocess.call(cmd)
+
+
+def cmd_triage(args: list):
+    """Full static triage: extract IPA, run all static analyzers, generate report."""
+    import json
+
+    if not args:
+        print("Usage: ./ios-wizard triage <target.ipa|App.app> [-o report_dir]")
+        return 1
+
+    target = args[0]
+    output_dir = 'report'
+    if '-o' in args:
+        output_dir = args[args.index('-o') + 1]
+    elif '--output' in args:
+        output_dir = args[args.index('--output') + 1]
+
+    os.makedirs(output_dir, exist_ok=True)
+    target_path = Path(target)
+
+    print(f"=== iOS Security Wizard Triage ===")
+    print(f"Target: {target}")
+    print(f"Output: {output_dir}")
+    print()
+
+    # Determine app bundle path (extract IPA if needed)
+    app_path = target
+    extracted_dir = None
+    if target_path.suffix == '.ipa':
+        extracted_dir = tempfile.mkdtemp(prefix='ioswiz_')
+        print(f"[1/6] Extracting IPA...")
+        ret = run_script(STATIC_DIR, 'ipa_structure', [target, '--extract-dir', extracted_dir, '-o', f'{output_dir}/ipa_structure.json'])
+        app_path = find_app_in(extracted_dir)
+        if not app_path:
+            print("Error: no .app found in IPA")
+            return 1
+    else:
+        print(f"[1/6] Analyzing bundle structure...")
+        ret = run_script(STATIC_DIR, 'ipa_structure', [target, '-o', f'{output_dir}/ipa_structure.json'])
+
+    print(f"\n[2/6] Scanning crypto usage...")
+    ret = run_script(STATIC_DIR, 'crypto_scan', [app_path, '-o', f'{output_dir}/crypto_findings.json', '--quiet'])
+
+    print(f"\n[3/6] Auditing entitlements...")
+    ret = run_script(STATIC_DIR, 'entitlements', [app_path])
+
+    print(f"\n[4/6] Checking hardened runtime...")
+    ret = run_script(STATIC_DIR, 'hardened_runtime', [app_path])
+
+    print(f"\n[5/6] Analyzing binaries (Mach-O)...")
+    # Find main binary
+    main_binary = find_main_binary(app_path)
+    if main_binary:
+        ret = run_script(STATIC_DIR, 'macho_parser', [main_binary])
+        print(f"\n[5.5/6] Recovering ObjC/Swift metadata...")
+        ret = run_script(STATIC_DIR, 'objc_swift', [main_binary])
+    else:
+        print("  (no main binary found)")
+
+    print(f"\n[6/6] Generating unified report...")
+    finding_files = []
+    for fname in ['crypto_findings.json']:
+        p = Path(output_dir) / fname
+        if p.exists():
+            finding_files.append(str(p))
+    if finding_files:
+        ret = run_script(PENTEST_DIR, 'report_gen', finding_files +
+                         ['-o', f'{output_dir}/assessment.md', '--target', target,
+                          '--sarif', f'{output_dir}/assessment.sarif'])
+
+    if extracted_dir:
+        shutil.rmtree(extracted_dir, ignore_errors=True)
+
+    print(f"\n=== Triage complete. Report: {output_dir}/assessment.md ===")
+    return 0
+
+
+def find_app_in(extracted_dir: str):
+    payload = Path(extracted_dir) / 'Payload'
+    if payload.exists():
+        apps = list(payload.glob('*.app'))
+        if apps:
+            return str(apps[0])
+    return None
+
+
+def find_main_binary(app_path: str):
+    """Find the main Mach-O binary in an app bundle."""
+    app = Path(app_path)
+    if not app.is_dir():
+        return None
+    # Check Info.plist for CFBundleExecutable
+    import plistlib
+    info_plist = app / 'Info.plist'
+    if info_plist.exists():
+        try:
+            with open(info_plist, 'rb') as f:
+                plist = plistlib.load(f)
+            exe = plist.get('CFBundleExecutable')
+            if exe:
+                candidate = app / exe
+                if candidate.exists():
+                    return str(candidate)
+        except:
+            pass
+    # Fallback: find any Mach-O at top level
+    for f in app.iterdir():
+        if f.is_file():
+            try:
+                with open(f, 'rb') as fh:
+                    magic = fh.read(4)
+                if magic in (b'\xfe\xed\xfa\xce', b'\xce\xfa\xed\xfe',
+                             b'\xfe\xed\xfa\xcf', b'\xcf\xfa\xed\xfe'):
+                    return str(f)
+            except:
+                pass
+    return None
+
+
+def cmd_static(args: list):
+    tools = {
+        'macho': ('macho_parser', 'Parse Mach-O binary'),
+        'ipa': ('ipa_structure', 'Analyze IPA/app bundle structure'),
+        'structure': ('ipa_structure', 'Analyze IPA/app bundle structure'),
+        'entitlements': ('entitlements', 'Audit entitlements/provisioning'),
+        'objc': ('objc_swift', 'Recover ObjC/Swift metadata'),
+        'dyld': ('dyld_cache', 'Parse dyld shared cache'),
+        'hardened': ('hardened_runtime', 'Audit hardened runtime flags'),
+        'crypto': ('crypto_scan', 'Scan crypto APIs and weaknesses'),
+    }
+    if not args or args[0] not in tools:
+        print("Usage: ./ios-wizard static <tool> <args...>")
+        print("Tools:")
+        for name, (script, desc) in tools.items():
+            print(f"  {name:15} {desc}")
+        return 1
+    name = args[0]
+    return run_script(STATIC_DIR, tools[name][0], args[1:])
+
+
+def cmd_dynamic(args: list):
+    tools = {
+        'gadget': ('gadget_frida', 'Frida gadget injection helpers'),
+        'interpose': ('dyld_interpose', 'Generate dyld interpose tracing'),
+        'xpc': ('xpc_enum', 'Enumerate XPC services'),
+        'launchd': ('launchd_inspect', 'Inspect launchd jobs'),
+        'jailbreak': ('jailbreak_check', 'Jailbreak/compromise assessment'),
+    }
+    if not args or args[0] not in tools:
+        print("Usage: ./ios-wizard dynamic <tool> <args...>")
+        print("Tools:")
+        for name, (script, desc) in tools.items():
+            print(f"  {name:15} {desc}")
+        return 1
+    name = args[0]
+    return run_script(DYNAMIC_DIR, tools[name][0], args[1:])
+
+
+def cmd_pentest(args: list):
+    tools = {
+        'diff': ('ipa_diff', 'Risk-weighted IPA delta'),
+        'probes': ('probe_plan', 'Generate attack surface probes'),
+        'baseline': ('device_baseline', 'Device baseline & drift'),
+        'report': ('report_gen', 'Unified report generator'),
+    }
+    if not args or args[0] not in tools:
+        print("Usage: ./ios-wizard pentest <tool> <args...>")
+        print("Tools:")
+        for name, (script, desc) in tools.items():
+            print(f"  {name:15} {desc}")
+        return 1
+    name = args[0]
+    return run_script(PENTEST_DIR, tools[name][0], args[1:])
+
+
+def cmd_test(args: list):
+    test_file = SKILL_ROOT / 'test_fixtures.py'
+    if not test_file.exists():
+        print("Error: test_fixtures.py not found")
+        return 1
+    return subprocess.call([sys.executable, str(test_file)])
+
+
+def print_help():
+    print("""ios-wizard — iOS Security Wizard unified CLI
+
+Usage:
+  ./ios-wizard triage <target.ipa|App.app> [-o report_dir]
+      Full static assessment: extract, scan, audit, report.
+
+  ./ios-wizard static <tool> <args...>
+      macho | ipa | entitlements | objc | dyld | hardened | crypto
+
+  ./ios-wizard dynamic <tool> <args...>
+      gadget | interpose | xpc | launchd | jailbreak
+
+  ./ios-wizard pentest <tool> <args...>
+      diff | probes | baseline | report
+
+  ./ios-wizard test
+      Run the component test suite.
+
+Docs: README.md (humans), AGENT-GUIDE.md (AI), INDEX.md (corpus map)
+""")
+
+
+def main():
+    if len(sys.argv) < 2:
+        print_help()
+        return 0
+
+    cmd = sys.argv[1]
+    args = sys.argv[2:]
+
+    if cmd == 'triage':
+        return cmd_triage(args)
+    elif cmd == 'static':
+        return cmd_static(args)
+    elif cmd == 'dynamic':
+        return cmd_dynamic(args)
+    elif cmd == 'pentest':
+        return cmd_pentest(args)
+    elif cmd == 'test':
+        return cmd_test(args)
+    elif cmd in ('help', '--help', '-h'):
+        print_help()
+        return 0
+    else:
+        print(f"Unknown command: {cmd}")
+        print_help()
+        return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

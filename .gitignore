@@ -1,0 +1,20 @@
+# Python build artifacts
+__pycache__/
+*.pyc
+*.pyo
+
+# Test/build scratch
+fixtures/
+/tmp/
+*.tmp
+.DS_Store
+
+# Local report output
+report/
+delta-report/
+probes/
+*.sarif.tmp
+
+# Editor
+.vscode/
+.idea/

@@ -115,6 +115,10 @@ Requirements: Python 3.11+ (stdlib only) for everything static; macOS + Apple De
 - No CI workflow yet; the local suite is the release gate. See `ROADMAP.md` Tier 1.
 - The ObjC parser targets the standard 64-bit runtime layout; binaries built with unusual runtime forks may need layout adjustment.
 
+## Repository layout
+
+This repo is the source of truth. The Hermes skill install (`~/.hermes/skills/security/ios-security-wizard/`) is a synced copy used by `skill_view`; keep them identical with `./scripts/sync_skill.sh` after any corpus change. Repo-only files (this README's public edition, `ROADMAP.md`, `.gitignore`, `scripts/check_links.py`, `scripts/sync_skill.sh`) are intentionally not part of the skill install.
+
 ## Contributing
 
 This corpus is open and actively maintained — contributions of verified technique docs, new detection signatures, or fixture improvements are welcome. Open an issue first to align scope, then PR against `master` with the test suite green (`./ios-wizard test`). Findings must be evidence-grounded; see the evidence schema in `AGENT-GUIDE.md`.

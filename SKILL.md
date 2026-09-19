@@ -21,6 +21,8 @@ metadata:
 
 **Corpus:** This skill is a complete corpus — INDEX.md maps everything; README.md is the human entry point; AGENT-GUIDE.md is the AI operating manual with the decision tree, evidence schema, and output interpretation rules. Load AGENT-GUIDE.md before executing any iOS security task.
 
+**Public corpus:** https://github.com/savagedamage/ios-security-wizard — the maintained repository (same content, versioned releases). Direct sibling of `android-security-wizard`.
+
 ## Static Analysis Layer
 
 ### Mach-O Parser (stdlib only)

@@ -1,8 +1,8 @@
 # iOS Security Wizard
 
-A synthesized iOS security research corpus: one integrated skill document plus 12 deep companion references covering the full iOS application security assessment pipeline — Mach-O static analysis, IPA/bundle anatomy, entitlement and provisioning auditing, crypto weakness scanning, gadget-mode dynamic instrumentation (no jailbreak), XPC/URL-scheme attack surface mapping, launchd persistence inspection, jailbreak/compromise assessment, device baseline drift detection, anti-tampering research, and pointer authentication (PAC) techniques. It also ships 18 stdlib-only Python tools (7 static, 5 dynamic, 4 pentest, 1 fixture builder, 1 test suite), 3 shell scripts, and a unified `ios-wizard` CLI.
+A synthesized iOS security research corpus: one integrated skill document plus 12 deep companion references covering the full iOS application security assessment pipeline — Mach-O static analysis, IPA/bundle anatomy, entitlement and provisioning auditing, crypto weakness scanning, gadget-mode dynamic instrumentation (no jailbreak), XPC/URL-scheme attack surface mapping, launchd persistence inspection, jailbreak/compromise assessment, device baseline drift detection, anti-tampering research, and pointer authentication (PAC) techniques. It also ships 19 stdlib-only Python tools (7 static, 5 dynamic, 4 pentest, 1 fixture builder, 1 test suite, 1 link checker), 4 shell scripts, and a unified `ios-wizard` CLI.
 
-**Grand total: ~10,500 lines / ~950 KB across 20 documents** (SKILL.md + AGENT-GUIDE + INDEX + GLOSSARY + 12 companions + README + CHANGELOG + report template), plus 19 stdlib-only Python scripts. Current release: **v1.1.1 (2026-09-16)** — see `CHANGELOG.md`. Last updated: 2026-09-16.
+**Grand total: 10,933 lines / 524 KB across 20 markdown documents** (SKILL.md + AGENT-GUIDE + INDEX + GLOSSARY + 12 companions + report template + README/CHANGELOG/ROADMAP), plus 19 stdlib-only Python scripts (8,046 lines). Current release: **v1.1.1 (2026-09-16)** — see `CHANGELOG.md`. Last updated: 2026-09-16.
 
 Last link check: 2026-09-16 — 4 unique external URLs: **4 OK, 0 dead**. Re-run with `python3 scripts/check_links.py`.
 
@@ -133,4 +133,4 @@ MIT — see `LICENSE`. Usage notice: this toolkit is for security assessment of 
 
 ---
 
-*Corpus: 20 documents (SKILL.md, AGENT-GUIDE, INDEX, GLOSSARY, README, CHANGELOG, 12 references, 1 template), ~10,500 lines / ~950 KB, plus 18 stdlib-only Python tools, 3 shell scripts, and the `ios-wizard` CLI. Last updated 2026-09-16.*
+*Corpus: 20 markdown documents (SKILL.md, AGENT-GUIDE, INDEX, GLOSSARY, 12 references, 1 template, README/CHANGELOG/ROADMAP), 10,933 lines / 524 KB, plus 19 stdlib-only Python tools (8,046 lines), 4 shell scripts, and the `ios-wizard` CLI. Last updated 2026-09-16.*

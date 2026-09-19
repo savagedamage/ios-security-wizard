@@ -2,7 +2,9 @@
 
 A synthesized iOS security research corpus: one integrated skill document plus 12 deep companion references covering the full iOS application security assessment pipeline — Mach-O static analysis, IPA/bundle anatomy, entitlement and provisioning auditing, crypto weakness scanning, gadget-mode dynamic instrumentation (no jailbreak), XPC/URL-scheme attack surface mapping, launchd persistence inspection, jailbreak/compromise assessment, device baseline drift detection, anti-tampering research, and pointer authentication (PAC) techniques. It also ships 18 stdlib-only Python tools (7 static, 5 dynamic, 4 pentest, 1 fixture builder, 1 test suite), 3 shell scripts, and a unified `ios-wizard` CLI.
 
-**Grand total: ~10,500 lines / ~950 KB across 20 documents** (SKILL.md + AGENT-GUIDE + INDEX + GLOSSARY + 12 companions + README + CHANGELOG + report template), plus 18 stdlib-only Python scripts. Current release: **v1.1.0 (2026-09-16)** — see `CHANGELOG.md`. Last updated: 2026-09-16.
+**Grand total: ~10,500 lines / ~950 KB across 20 documents** (SKILL.md + AGENT-GUIDE + INDEX + GLOSSARY + 12 companions + README + CHANGELOG + report template), plus 19 stdlib-only Python scripts. Current release: **v1.1.1 (2026-09-16)** — see `CHANGELOG.md`. Last updated: 2026-09-16.
+
+Last link check: 2026-09-16 — 4 unique external URLs: **4 OK, 0 dead**. Re-run with `python3 scripts/check_links.py`.
 
 ---
 
@@ -66,6 +68,7 @@ This repository is the working corpus behind the `ios-security-wizard` Hermes sk
 | `pentest/report_gen.py` | 378 | Unified evidence-schema report generator |
 | `test/macho_fixture.py` | 246 | Minimal valid arm64 Mach-O builder (no Xcode needed) |
 | `test_fixtures.py` | 439 | 15-test component suite exercising every tool |
+| `scripts/check_links.py` | 110 | Corpus URL health checker (verifiable link-check claim) |
 
 ## Coverage areas
 

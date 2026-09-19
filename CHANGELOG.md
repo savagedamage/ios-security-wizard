@@ -2,6 +2,20 @@
 
 All notable changes to the iOS Security Wizard corpus.
 
+## [1.1.1] - 2026-09-16
+
+### Added
+- `scripts/check_links.py` — corpus URL health checker (dead/bot-blocked/timeout classification, JSON output, non-zero exit on dead links)
+- `ROADMAP.md` — measured baseline + tiered plan (trust → use → depth → reach) with acceptance criteria per item
+
+### Changed
+- Shell scripts (`extract_dyld_cache.sh`, `baseline_capture.sh`) are now location-independent — they resolve their own directory instead of a hardcoded home path
+- README rewritten for public release: corpus-at-a-glance tables, coverage checklist, honest gaps, contributing section, sibling repo link
+
+### Verified
+- Link check 2026-09-16: 4 unique external URLs, 4 OK, 0 dead
+- Full suite: 15 passed, 0 failed
+
 ## [1.1.0] - 2026-09-16
 
 ### Added
